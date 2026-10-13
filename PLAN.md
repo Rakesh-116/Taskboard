@@ -43,7 +43,7 @@ Use synchronous routes for synchronous SQLite calls. Each database operation own
 
 ## Delivery boundary
 
-All local deliverables are prepared inside this folder. Publishing a GitHub/internal repository and supplying its URL is an outstanding learner submission step; no remote destination was supplied. Tool access was demonstrated, but organizational approval of the learner's account cannot be certified by this agent.
+All local deliverables are prepared inside this folder. The learner has now supplied the repository URL: [Rakesh-116/Taskboard](https://github.com/Rakesh-116/Taskboard). The agent has not committed or pushed local updates. Tool access was demonstrated, but organizational approval of the learner's account cannot be certified by this agent.
 
 ## User-requested UI extensions
 

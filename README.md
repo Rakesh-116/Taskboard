@@ -2,6 +2,8 @@
 
 Assignment B addresses a small team's need to create, view, update, and delete tasks using a lightweight local service. FastAPI handles HTTP and validation; SQLite keeps tasks after restarts. This folder contains the implementation, tests, project guidance, and assessment evidence.
 
+**Source repository:** [Rakesh-116/Taskboard](https://github.com/Rakesh-116/Taskboard)
+
 ## Project structure
 
 ```text
@@ -41,7 +43,7 @@ Day-4_Assignment_B_Build_New_Application/
 |-- README.md                             # Project explanation and usage
 |-- VERIFICATION.md                       # Results, source review, limitations
 |-- ENGINEERING_REFLECTION.md              # Reflection in readable text
-|-- Day04_Engineering_Reflection_Completed.docx
+|-- Day04_Engineering_Reflection_Final.docx
 `-- Day04_Assignment_B_Submission.zip      # Packaged local deliverables
 ```
 
@@ -210,11 +212,11 @@ Implementation conventions follow [FastAPI's testing guide](https://fastapi.tian
 - Source, tests, guidance: `app/`, `tests/`, `scripts/`, `AGENTS.md`, dependency files.
 - Planning and acceptance criteria: [PLAN.md](PLAN.md).
 - Actual evidence and review: [VERIFICATION.md](VERIFICATION.md), `evidence/`.
-- Reflection: [ENGINEERING_REFLECTION.md](ENGINEERING_REFLECTION.md) and its Word copy.
+- Reflection: [ENGINEERING_REFLECTION.md](ENGINEERING_REFLECTION.md) and [the final Word copy](Day04_Engineering_Reflection_Final.docx).
 - Submission archive: `Day04_Assignment_B_Submission.zip`, excluding environment, caches, and databases.
 
 The documents require an engineering reflection but do not prescribe Word as the submission format. The completed Word file is provided for convenience; include it if your submission portal accepts Word or your trainer requests it. You do not need to fill out or submit Assignment A for this track. The original assignment documents and presentation are reference materials, not listed as completed deliverables to resubmit.
 
-The local assessment package is prepared. The assignment also asks for a repository URL: upload these source files to an approved GitHub/internal repository and provide its link. No repository was published or commit created. Read the code/reflection and perform your own review before submitting; agent review does not certify human acceptance or organizational tool approval.
+The local assessment package is prepared. Submit the repository link: [Rakesh-116/Taskboard](https://github.com/Rakesh-116/Taskboard), supplied by the learner. Include the updated documentation, evidence, and reflection in that repository. Read the code/reflection and perform your own review before submitting; agent review does not certify human acceptance or organizational tool approval. The agent has not committed or pushed these local updates.
 
 Navigation follow-up: **52 tests passed** after separating Overview and Tasks, including status filters and active navigation. Output: `evidence/navigation-tests.txt`.

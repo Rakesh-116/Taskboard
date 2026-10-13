@@ -46,7 +46,7 @@ Reviewed application schemas, routes, database operations, tests, verification s
 - App import does not initialize the database; startup does, enabling isolated app factories.
 - Dependencies are limited to the framework, validation, server, and test clients/tools; transitive packages are recorded in the lock file.
 
-Agent review is complete; learner review/acceptance is still a human submission responsibility. No hosted repository URL, commit, vulnerability-audit claim, or independent human acceptance is asserted.
+Agent review is complete; learner review/acceptance is still a human submission responsibility. The learner supplied the repository URL: [Rakesh-116/Taskboard](https://github.com/Rakesh-116/Taskboard). No remote-content verification, agent commit/push, vulnerability-audit claim, or independent human acceptance is asserted.
 
 ## Observed issues and remaining risks
 
