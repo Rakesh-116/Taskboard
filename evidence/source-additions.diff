@@ -1,0 +1,1295 @@
+--- /dev/null
++++ b/.gitignore
+@@ -0,0 +1,8 @@
++.venv/
++__pycache__/
++.pytest_cache/
++*.pyc
++*.db
++*.db-journal
++*.db-wal
++*.db-shm
+--- /dev/null
++++ b/AGENTS.md
+@@ -0,0 +1,11 @@
++# Task Management API — Project Guidance
++
++- Use Python, FastAPI, Pydantic, and the standard-library sqlite3 module.
++- Keep changes inside this project and keep the application small.
++- Validate titles, status values, task IDs, and unknown request fields.
++- Use parameterized SQL; never expose secrets or add sensitive sample data.
++- Add behavioral tests and run them before reporting success.
++- Verify persistence using a fresh application and an actual server restart.
++- Review all changed files and dependencies, and report actual commands/results.
++- Keep the user-requested dashboard and task CRUD pages small. UI forms must call the existing API and escape user data. Do not add authentication, cloud services, or parallel agents unless requested.
++- Do not commit or publish automatically.
+--- /dev/null
++++ b/PLAN.md
+@@ -0,0 +1,50 @@
++# Day 04 implementation plan and acceptance criteria
++
++Selected track: **Assignment B — Build a New Application**.
++
++The Day 04 directory was empty at inspection. Assignment A would require an existing authorized API and a baseline; building a new minimal API is the more direct option here.
++
++## Scope and authorization
++
++The user requested completion of the easier/faster assessment and changes inside the Day 04 folder. A plan was presented in chat before application files were written. The final instruction to complete and make changes was treated as authorization to execute that plan. There was no separate interactive plan-approval exchange; this document does not claim one.
++
++## Minimal architecture
++
++- `app/models.py`: Pydantic request validation and response contracts.
++- `app/database.py`: standard-library SQLite repository, parameterized queries, transaction/connection cleanup.
++- `app/main.py`: FastAPI application factory, startup initialization, five CRUD routes.
++- `tests/test_tasks.py`: isolated temporary databases and behavioral API tests.
++- `scripts/verify_http.py`: actual Uvicorn processes, HTTP requests, restart verification.
++
++Use synchronous routes for synchronous SQLite calls. Each database operation owns and closes its connection. No ORM, frontend, authentication, cloud deployment, external integrations, or parallel agents.
++
++## Implementation stages
++
++1. Create project guidance, dependencies, schemas, SQLite setup, and routes.
++2. Add tests for CRUD, validation, missing resources, and persistent state.
++3. Install dependencies in a project virtual environment; run actual tests.
++4. Exercise actual HTTP endpoints and restart the service against the same SQLite file.
++5. Review source/dependencies and capture an additions diff from the initially empty folder.
++6. Prepare README, test logs, actual request/response evidence, reflection, and a submission archive.
++
++## Acceptance criteria
++
++| Requirement | Expected behavior |
++| --- | --- |
++| Task fields | Server-generated positive ID, nonblank title, optional description, allowed status, UTC creation timestamp |
++| Create | POST `/tasks`: 201 and saved task |
++| List | GET `/tasks`: 200 and tasks in ID order |
++| Retrieve | GET `/tasks/{id}`: 200 or 404 |
++| Update | PATCH `/tasks/{id}`: 200; only supplied fields change |
++| Delete | DELETE `/tasks/{id}`: 204; subsequent get is 404 |
++| Validation | Missing/blank title, unknown status, invalid IDs, and invalid update payloads return 422 |
++| Persistence | Create/update/delete state survives fresh applications and actual process restarts |
++| Evidence | Real test output, actual HTTP exchanges, source review, README, honest reflection |
++
++## Delivery boundary
++
++All local deliverables are prepared inside this folder. Publishing a GitHub/internal repository and supplying its URL is an outstanding learner submission step; no remote destination was supplied. Tool access was demonstrated, but organizational approval of the learner's account cannot be certified by this agent.
++
++## User-requested UI extensions
++
++After the original API assessment, the user explicitly requested a home dashboard and then UI for the other task operations. The implemented extension uses `/ui/tasks` list/create/detail/edit pages, shared templates/static assets, and JavaScript calling the same CRUD API. SQLite behavior and API contracts remain centralized. This is an authorized expansion of the original scope. Browser interaction verification is a manual follow-up; HTTP/API tests and UI rendering checks are recorded separately.
+--- /dev/null
++++ b/README.md
+@@ -0,0 +1,220 @@
++# Day 04 — Task Management REST API
++
++Assignment B addresses a small team's need to create, view, update, and delete tasks using a lightweight local service. FastAPI handles HTTP and validation; SQLite keeps tasks after restarts. This folder contains the implementation, tests, project guidance, and assessment evidence.
++
++## Project structure
++
++```text
++Day-4_Assignment_B_Build_New_Application/
++|-- app/                                  # Application package
++|   |-- __init__.py
++|   |-- main.py                           # App factory, startup, HTTP routes
++|   |-- models.py                         # Request/response schemas and validation
++|   |-- database.py                       # SQLite persistence and transactions
++|   |-- dashboard.py                      # Escaped dashboard, detail, and form pages
++|   |-- templates/
++|   |   |-- dashboard.html                # Task list and dashboard
++|   |   `-- page.html                     # Shared form/detail page layout
++|   `-- static/
++|       |-- styles.css                    # Shared responsive styling
++|       `-- tasks.js                      # Form submission and delete actions
++|-- tests/
++|   `-- test_tasks.py                     # Automated behavioral API tests
++|-- scripts/
++|   `-- verify_http.py                    # Real HTTP and server-restart verification
++|-- evidence/                             # Captured results and review artifacts
++|   |-- pytest.txt
++|   |-- http-verification.txt
++|   |-- http-exchanges.json
++|   |-- server.log
++|   |-- dependency-check.txt
++|   |-- source-additions.diff
++|   `-- source-sha256.json
++|-- data/                                 # Created at runtime; database not submitted
++|   `-- tasks.db
++|-- .venv/                                # Local environment; not submitted
++|-- .gitignore
++|-- AGENTS.md                             # Coding-agent guidance
++|-- requirements.txt                      # Direct dependency ranges
++|-- requirements-lock.txt                 # Exact verified dependency versions
++|-- PLAN.md                               # Scope, plan, acceptance criteria
++|-- README.md                             # Project explanation and usage
++|-- VERIFICATION.md                       # Results, source review, limitations
++|-- ENGINEERING_REFLECTION.md              # Reflection in readable text
++|-- Day04_Engineering_Reflection_Completed.docx
++`-- Day04_Assignment_B_Submission.zip      # Packaged local deliverables
++```
++
++Application code, tests, verification tools, and assessment evidence have separate folders. `data/` and `.venv/` are runtime/local resources excluded from the submission archive. Python and test caches are also ignored. The application modules separate API routes, schemas, persistence, and dashboard rendering; separate controller/service packages would add layers without additional business logic.
++
++## Architecture and request flow
++
++```text
++Client HTTP request
++        |
++        v
++FastAPI route + Pydantic validation (main.py / models.py)
++        |
++        v
++TaskStore operation + parameterized SQL (database.py)
++        |
++        v
++SQLite file (data/tasks.db)
++        |
++        v
++Response validated against the Task schema -> JSON to client
++```
++
++`create_app()` builds the API and its database repository. Its lifespan handler creates the table on startup without deleting existing tasks. The repository opens a connection for each operation, commits successful writes, rolls back failures, and closes the connection.
++
++For example, POST `/tasks` first validates the title and status. The repository inserts the task with a generated ID and UTC timestamp, then the route returns the saved task with HTTP 201. Invalid requests return 422 before writing. GET/PATCH/DELETE on a valid but nonexistent ID return 404.
++
++## How we implemented the project
++
++1. Read the assignment requirements, inspect the empty Day 04 folder, and select Track B. Document the minimum architecture and acceptance criteria in `PLAN.md`.
++2. Add `AGENTS.md` to constrain changes, require real verification, and avoid unrelated features.
++3. Define `TaskCreate`, `TaskUpdate`, `Task`, and allowed statuses in `models.py`. Enforce title/description limits, reject unknown fields, and distinguish omitted PATCH fields from explicit null values.
++4. Implement the `TaskStore` repository in `database.py`, using SQLite constraints, parameterized queries, and transaction cleanup.
++5. Connect five CRUD routes in `main.py`, with explicit success codes, positive integer ID validation, and not-found errors.
++6. Add isolated automated tests in `tests/test_tasks.py`; add a real HTTP verification script that restarts Uvicorn against the same temporary database.
++7. Run tests and HTTP checks, inspect the resulting source/dependencies, record the outputs, and prepare the reflection and submission package.
++
++This is a small layered design: schemas define the contract, routes handle HTTP, and the repository handles storage. Tests exercise observable behavior rather than replacing database operations with mocks.
++
++## Prerequisites and setup
++
++Python 3.10+ is required; this submission was actually tested on Windows with Python 3.14.8. Run these PowerShell commands from this folder:
++
++```powershell
++python -m venv .venv
++.\.venv\Scripts\python.exe -m pip install -r requirements-lock.txt
++.\.venv\Scripts\python.exe -m uvicorn app.main:app --host 127.0.0.1 --port 8000
++```
++
++The existing `.venv` in the working folder is already installed. The submission ZIP excludes it. `requirements-lock.txt` captures the exact installed versions used for verification; `requirements.txt` lists direct dependencies with version ranges. Install only one of these files. For local development, append `--reload` to the run command. No activation or PowerShell execution-policy change is needed.
++
++Open **`http://127.0.0.1:8000/`** for the home dashboard and task controls. Create a task with the form, open its detail page, edit its title/description/status, or delete it after confirmation. The dashboard renders current SQLite data when loaded. Task titles and descriptions are HTML-escaped before display.
++
++Open `http://127.0.0.1:8000/docs` for optional interactive API documentation. OpenAPI JSON is at `/openapi.json`. The home page and CRUD UI were added at the user's explicit request after the original API assessment implementation.
++
++SQLite creates `data/tasks.db` on startup. The default path is anchored to the project, so changing the working directory does not change that default file. To use another persistent database:
++
++```powershell
++$env:TASK_DB_PATH = Join-Path $PWD 'data\custom-tasks.db'
++.\.venv\Scripts\python.exe -m uvicorn app.main:app --host 127.0.0.1 --port 8000
++```
++
++Reuse the same database path on restart. Do not set it to `:memory:`: the repository deliberately uses file persistence and a new connection per operation.
++
++## Using the task UI
++
++| Page | URL | What you can do |
++| --- | --- | --- |
++| Overview | `/` | See counts and saved tasks |
++| Task list | `/ui/tasks` | Filter by status, browse tasks, and open their details |
++| Create | `/ui/tasks/new` | Enter a title, optional description, and status |
++| Details | `/ui/tasks/{id}` | Read the task, open edit, or confirm deletion |
++| Edit | `/ui/tasks/{id}/edit` | Update fields or clear the description |
++
++Overview (`/`) shows summary counts; Tasks (`/ui/tasks`) is a separate list with All/Pending/In progress/Completed filters. The current navigation item is highlighted. The Create/Save buttons use POST/PATCH on the existing JSON API, then open the saved task. Delete calls DELETE only after confirmation and returns to the task list. Forms require JavaScript; validation/network failures appear inline without discarding entered values. A missing task has a friendly 404 page. Swagger remains available, but is not needed for ordinary task management.
++
++To verify manually: create a task, open it, edit its status and description, return to the list, restart the server and confirm it persists, then delete it. Try a whitespace-only title and confirm an error appears. Cancel deletion once to confirm that nothing changes.
++
++## Task contract
++
++| Field | Behavior |
++| --- | --- |
++| `id` | Server-generated positive SQLite integer; clients cannot set it |
++| `title` | Required for creation; whitespace trimmed; 1–200 characters after trimming |
++| `description` | Optional string or null; maximum 2,000 characters |
++| `status` | `pending` (default), `in_progress`, or `completed` |
++| `created_at` | Server-generated timestamp in UTC; cannot be edited |
++
++Unknown fields are rejected. PATCH must contain at least one editable field. Omitted fields remain unchanged; `description: null` clears a description; null title/status are rejected. IDs must be positive integers within SQLite's signed 64-bit range. A collection request `/tasks` intentionally has no ID; an individual operation requires `/tasks/{id}`.
++
++## Endpoints
++
++| Method | Path | Success | Errors |
++| --- | --- | --- | --- |
++| GET | `/` | 200, HTML dashboard | — |
++| POST | `/tasks` | 201, task object, Location header | 422 invalid/missing input |
++| GET | `/tasks` | 200, array ordered by ID | — |
++| GET | `/tasks/{id}` | 200, task object | 422 invalid ID; 404 missing task |
++| PATCH | `/tasks/{id}` | 200, updated task | 422 invalid input/ID; 404 missing task |
++| DELETE | `/tasks/{id}` | 204, empty body | 422 invalid ID; 404 missing task |
++
++For a PATCH with both an invalid body and a nonexistent ID, request validation runs first and returns 422.
++
++## Sample requests
++
++With the server running, use a second PowerShell terminal:
++
++```powershell
++$base = 'http://127.0.0.1:8000'
++$task = Invoke-RestMethod -Method Post -Uri "$base/tasks" -ContentType 'application/json' -Body '{"title":"Complete Day 04","description":"Prepare assessment"}'
++Invoke-RestMethod -Uri "$base/tasks"
++Invoke-RestMethod -Uri "$base/tasks/$($task.id)"
++Invoke-RestMethod -Method Patch -Uri "$base/tasks/$($task.id)" -ContentType 'application/json' -Body '{"status":"completed"}'
++Invoke-WebRequest -Method Delete -Uri "$base/tasks/$($task.id)"
++```
++
++Illustrative creation response (ID and timestamp vary):
++
++```json
++{
++  "id": 1,
++  "title": "Complete Day 04",
++  "description": "Prepare assessment",
++  "status": "pending",
++  "created_at": "2026-10-13T00:00:00Z"
++}
++```
++
++A nonexistent task returns `404` with `{"detail":"Task not found"}`. Validation returns `422` with a `detail` array identifying the field and validation failure. Exact responses from the actual run are in [evidence/http-exchanges.json](evidence/http-exchanges.json); the illustrative timestamp above is not test evidence.
++
++## Verification
++
++```powershell
++.\.venv\Scripts\python.exe -m pytest -v
++.\.venv\Scripts\python.exe scripts\verify_http.py
++.\.venv\Scripts\python.exe -m pip check
++```
++
++Actual results: **46 tests passed**, **13 real HTTP exchanges passed**, and `pip check` reported no broken requirements. The HTTP script starts three local Uvicorn processes in sequence, verifies state after two restarts, and stops each process. It uses a temporary database and does not alter `data/tasks.db`.
++
++After adding the user-requested dashboard, **47 tests passed**; the new test covers empty state, saved task display, completed count, links, and HTML escaping. Output is in `evidence/dashboard-tests.txt`. The earlier API and restart evidence remains available. After adding the CRUD UI, **51 tests passed**, recorded in `evidence/ui-tests.txt`. These tests validate HTTP page rendering, escaped form values, friendly missing-task pages, asset serving, and API state transitions. Browser JavaScript execution and visual appearance were not automated in this environment.
++
++One test warning comes from installed Starlette's deprecation of HTTPX-based TestClient. Tests passed with the locked versions; a future dependency refresh should review the recommended successor rather than hiding the warning.
++
++See [VERIFICATION.md](VERIFICATION.md) and raw logs under `evidence/`.
++
++## Design choices and limitations
++
++- **SQLite over in-memory storage:** restart persistence with no database server. Trade-off: concurrent writes serialize; this design suits a small local workload, not a high-throughput service.
++- **Standard-library SQLite over an ORM:** fewer direct dependencies and visible SQL. Trade-off: schema changes would require an explicit migration approach.
++- **Pydantic over custom request parsing:** consistent 422 responses and OpenAPI contracts. A small update validator enforces nonempty PATCH and prevents null title/status.
++- **Synchronous routes:** match blocking SQLite operations; FastAPI runs synchronous endpoint functions outside the event loop.
++- **PATCH over PUT:** supports partial updates without replacing omitted fields; creation time is immutable.
++- All user values use SQL parameters; dynamic update columns come from a fixed allowlist. Tests include an SQL-like title and show it is stored as text.
++- Local use only: no authentication, authorization, backups, migrations, pagination, rate limiting, or load testing. Use the loopback host shown above. Production use needs those decisions and operational verification.
++- Dependency consistency was checked, but no vulnerability audit or load test was performed.
++
++Implementation conventions follow [FastAPI's testing guide](https://fastapi.tiangolo.com/tutorial/testing/) and [Python's sqlite3 documentation](https://docs.python.org/3.14/library/sqlite3.html).
++
++## Assessment submission
++
++**Complete Assignment A OR Assignment B, not both.** The assignment document explicitly says “Choose this track OR the alternative track.” This project completes the local implementation for Assignment B.
++
++**Code alone is not the full submission.** Include the following:
++
++- Source, tests, guidance: `app/`, `tests/`, `scripts/`, `AGENTS.md`, dependency files.
++- Planning and acceptance criteria: [PLAN.md](PLAN.md).
++- Actual evidence and review: [VERIFICATION.md](VERIFICATION.md), `evidence/`.
++- Reflection: [ENGINEERING_REFLECTION.md](ENGINEERING_REFLECTION.md) and its Word copy.
++- Submission archive: `Day04_Assignment_B_Submission.zip`, excluding environment, caches, and databases.
++
++The documents require an engineering reflection but do not prescribe Word as the submission format. The completed Word file is provided for convenience; include it if your submission portal accepts Word or your trainer requests it. You do not need to fill out or submit Assignment A for this track. The original assignment documents and presentation are reference materials, not listed as completed deliverables to resubmit.
++
++The local assessment package is prepared. The assignment also asks for a repository URL: upload these source files to an approved GitHub/internal repository and provide its link. No repository was published or commit created. Read the code/reflection and perform your own review before submitting; agent review does not certify human acceptance or organizational tool approval.
++
++Navigation follow-up: **52 tests passed** after separating Overview and Tasks, including status filters and active navigation. Output: `evidence/navigation-tests.txt`.
+--- /dev/null
++++ b/VERIFICATION.md
+@@ -0,0 +1,71 @@
++# Verification and change review
++
++Verification completed during the Day 04 work session ending 13 October 2026 (Asia/Calcutta). This report records actual execution, rather than expected results.
++
++## Environment and commands
++
++Windows PowerShell; Python 3.14.8; project-local `.venv`. Exact dependency versions are in `requirements-lock.txt`.
++
++| Command (from this folder) | Actual result | Evidence |
++| --- | --- | --- |
++| `python -m venv .venv` | Exit 0 | Executed in chat terminal |
++| `.\.venv\Scripts\python.exe -m pip install -r requirements.txt` | Initial sandbox attempt failed with WinError 10013; approved retry installed dependencies | Executed in chat terminal; resolved versions in lock file |
++| `.\.venv\Scripts\python.exe -m pytest -v` | Exit 0; 46 passed, 1 warning in 2.16 seconds | `evidence/pytest.txt` |
++| `.\.venv\Scripts\python.exe scripts\verify_http.py` | Exit 0; 13 HTTP exchanges passed, including state across two restarts | `evidence/http-verification.txt`, `evidence/http-exchanges.json`, `evidence/server.log` |
++| `.\.venv\Scripts\python.exe -m pip check` | Exit 0; no broken requirements | `evidence/dependency-check.txt` |
++| `.\.venv\Scripts\python.exe -m pip freeze` | Captured actual installed versions | `requirements-lock.txt` |
++
++Test and HTTP output were captured with `2>&1 | Tee-Object -FilePath evidence\<filename>`; the commands propagated the Python process exit code with `exit $LASTEXITCODE`.
++
++## Requirement evidence
++
++| Requirement | Evidence |
++| --- | --- |
++| ID/title/description/status/time | Lifecycle test checks all fields, positive ID, default status, normalized title, UTC time |
++| Create/list/get | Lifecycle test plus real POST/GET requests |
++| Update/delete | Lifecycle test verifies retained fields and immutable timestamp; real PATCH/DELETE requests |
++| Invalid/missing fields | Parameterized create/update tests; real invalid title/status requests |
++| Invalid task IDs | Parameterized GET/PATCH/DELETE checks for zero, negative, text, decimal, and oversized IDs |
++| Nonexistent task IDs | GET/PATCH/DELETE tests return 404; real missing-resource GET |
++| Restart persistence | Fresh-app test covers create/update/delete; actual Uvicorn process restarts verify persisted update and deletion |
++| SQL parameterization | SQL-like task title round-trips without harming table or another task |
++| Documentation | README includes setup/run commands, contract, examples, trade-offs, limitations |
++
++## Source review
++
++Baseline: Day 04 folder existed and contained no files before this work. Git was unavailable on PATH (`git rev-parse --show-toplevel` could not run). An additions diff from the empty baseline is captured in `evidence/source-additions.diff`; it is a generated unified diff, **not** output from `git diff`. A SHA-256 source manifest is included alongside it.
++
++Reviewed application schemas, routes, database operations, tests, verification script, guidance, dependencies, README, and reflection. Review found:
++
++- Five intended CRUD API routes plus the user-requested home dashboard; no unrelated authentication or deployment code.
++- Valid requests preserve task fields; failed validation writes no data.
++- Response codes match documented contracts; DELETE sends no response body.
++- SQLite operations commit/rollback and explicitly close connections.
++- All values are parameterized; interpolated identifiers use a fixed allowlist.
++- Temporary test databases isolate verification from normal user data.
++- App import does not initialize the database; startup does, enabling isolated app factories.
++- Dependencies are limited to the framework, validation, server, and test clients/tools; transitive packages are recorded in the lock file.
++
++Agent review is complete; learner review/acceptance is still a human submission responsibility. No hosted repository URL, commit, vulnerability-audit claim, or independent human acceptance is asserted.
++
++## Observed issues and remaining risks
++
++The dependency download required network approval after the sandbox restriction. No application-test failure occurred. Installed Starlette emits one TestClient deprecation warning recommending `httpx2`; the current locked combination passed. A dependency update should address that warning deliberately.
++
++SQLite write contention, unlimited list size, and absence of identity/access controls remain local-demo limitations. Before production, establish access control, migrations/backups, pagination, dependency security review, and concurrency/load tests.
++
++## Home dashboard follow-up
++
++The user explicitly requested a home/dashboard at `/` after seeing the root return 404. Added a server-rendered HTML page with task counts, saved task rows, empty state, refresh, and API docs links. User text is HTML-escaped; no new packages were installed. The dashboard reads the existing SQLite store.
++
++Ran `.\.venv\Scripts\python.exe -m pytest -v` again after this code change: **47 tests passed**, with the same dependency deprecation warning. The added behavioral test verifies root HTML, empty state, task rendering, status count, task links, and escaping of script-like title/description values. Actual output is in `evidence/dashboard-tests.txt`. Browser visual inspection was not performed; responsive layout is implemented in CSS. The previously captured real HTTP/restart evidence applies to the existing API routes.
++
++## Task CRUD UI follow-up
++
++The user requested UI for all task operations. Added `/ui/tasks`, `/ui/tasks/new`, `/ui/tasks/{id}`, and `/ui/tasks/{id}/edit`. Shared HTML/CSS presents forms, details, and deletion confirmation. JavaScript uses the existing POST/PATCH/DELETE API, displays errors with textContent, prevents duplicate submissions, and navigates after successful actions. No new dependencies were added.
++
++Ran `.\.venv\Scripts\python.exe -m pytest -v`: **51 passed, 1 warning in 5.77 seconds**. Actual log: `evidence/ui-tests.txt`. Tests cover page/form endpoints, title/description escaping, task links, update/delete API state reflected in pages, friendly 404s, and CSS/JavaScript asset delivery. These are server-side HTTP tests; browser clicks, JavaScript execution, and visual layout were not tested because no browser-testing tool/runtime is available. Manual UI verification steps are in README.
++
++## Navigation correction
++
++Overview and Tasks initially used different URLs but shared a dashboard handler. They now have distinct handlers/views: overview summary at `/`, and task workspace at `/ui/tasks` with validated status filters and highlighted navigation. Ran the full suite: **52 passed, 1 warning in 5.22 seconds**; output in `evidence/navigation-tests.txt`. The regression test verifies distinct content, active navigation, filter results, invalid filter rejection, and unchanged API data.
+--- /dev/null
++++ b/ENGINEERING_REFLECTION.md
+@@ -0,0 +1,79 @@
++# Day 04 — Engineering Reflection
++
++This reflection describes the observed coding-agent session. It does not invent learner interventions, model usage metrics, or independent human review. The learner should read and confirm the statements before submission.
++
++## 1. Tool and repository
++
++Codex was used through this session on a non-sensitive local training folder, `Day-4_Assignment_B_Build_New_Application`. Python/PowerShell were used for implementation and verification. The folder was initially empty. Tool functionality was available; compliance with the learner's organizational account/access policy must be confirmed by the learner. No confidential repository or credentials were needed.
++
++## 2. Goal, context, constraints, and definition of done
++
++The request was to complete the easier/faster Day 04 assessment inside the Day 04 folder. Track B was selected because Track A needs a suitable existing authorized API. The goal was a local task-management REST API with create/list/get/update/delete, validation, SQLite persistence, automated tests, setup instructions, and honest evidence/reflection.
++
++Scope excluded frontend, authentication, cloud deployment, external integrations, unnecessary dependencies, automatic commits, and multi-agent orchestration. Local completion required working CRUD operations, meaningful 422/404 errors, verified restart persistence, captured actual results, and reviewed source. The hosted repository link required by the assignment remains a learner submission step because no remote destination was supplied.
++
++## 3. Project guidance
++
++The project contains `AGENTS.md`. One concrete instruction is: “Add behavioral tests and run them before reporting success.” Other guidance requires parameterized SQL, bounded changes, actual restart verification, no sensitive data, and no automatic publication. This keeps future coding-agent work aligned with the assessment.
++
++## 4. Suggestions, choices, and a suggestion to question
++
++The agent proposed FastAPI, Pydantic, built-in SQLite, three small application modules, isolated tests, and an actual HTTP restart check. These choices were implemented under the user's instruction to complete the assessment. No separate plan-approval exchange or learner architecture challenge occurred; neither is claimed here.
++
++SQLite was chosen over in-memory storage to satisfy persistence. Built-in sqlite3 was chosen over an ORM to reduce direct dependencies and keep queries inspectable. PATCH was chosen for partial updates. Framework validation supplies consistent errors; a small custom validator handles nonempty updates and null rules.
++
++A suggestion I would question before further work is adding an ORM or authentication to this assessment. An ORM would add setup and migration decisions; authentication would expand the business scope and test matrix. Both should require a concrete need. This is a proposed question, not an intervention that occurred in this session.
++
++## 5. What was actually verified
++
++`.\.venv\Scripts\python.exe -m pytest -v` ran successfully: **46 passed, 1 warning in 2.16 seconds**. Tests cover task lifecycle, validation, field limits, allowed statuses, nonexistent and invalid IDs, SQL-like input, documentation availability, and create/update/delete persistence through fresh applications.
++
++`.\.venv\Scripts\python.exe scripts\verify_http.py` ran actual Uvicorn processes and **13 HTTP exchanges**, verifying updated task state after one restart and deletion after another. Actual payloads/responses and server output are saved under `evidence/`. `pip check` found no broken requirements.
++
++The agent reviewed the source and captured an additions diff from the empty folder, since Git was unavailable on PATH. This is not a claimed Git diff or independent human acceptance. The learner still needs to inspect the code/diff and approve the final behavior before submission.
++
++## 6. Failures, investigation, and recovery
++
++The first dependency installation failed because the sandbox blocked PyPI sockets (WinError 10013). The agent identified the network restriction and retried using requested/approved network access rather than changing application code or running repeated blind retries. Installation then succeeded.
++
++Git was unavailable on PATH, so the evidence explicitly uses a generated unified additions diff and file hashes. No application-test failures occurred. A Starlette TestClient deprecation warning was retained and documented; it did not fail the tests. No fabricated debugging story is needed.
++
++## 7. Security, remaining risk, and improvement
++
++The API uses input validation, parameterized SQL, a fixed allowlist of update columns, and transaction/connection cleanup. Verification uses synthetic task data and isolated temporary databases. No secrets were inspected or embedded, and no remote publication occurred.
++
++A remaining risk is SQLite write contention as usage grows. A next iteration should add measured concurrency tests and pagination before considering a larger database. Production use would additionally need access controls, backup/migration plans, and a dependency vulnerability review; these were not performed here. The TestClient warning should be addressed when dependencies are refreshed.
++
++## 8. Cost efficiency and responsible AI use
++
++Work stayed in the Day 04 folder after a small workspace inspection. Only the relevant assignment/reflection documents were extracted; the user-supplied presentation summary provided workflow context, and the PDF was not independently parsed. Official FastAPI/Python documentation was consulted for implementation conventions. No parallel agents, model switching, frontend generation, or cloud setup were used.
++
++The test suite was run once after implementation, then a separate real HTTP check covered the acceptance gap of process restart persistence. Parameterized tests cover many invalid inputs without repetitive manual requests. A project-local environment avoids unrelated package changes. No token, financial, or percentage savings are claimed because measured usage data was not collected.
++
++For a repeated failed attempt, stop, identify the failing command and cause, and make a focused correction or request the missing permission. Do not rerun the entire workflow without new evidence. The sandbox failure in this session followed that principle.
++
++## 9. AI value and the FDE lens
++
++The agent turned a bounded requirement set into a small implementation, tests, and reproducible evidence. This can accelerate delivery while preserving customer confidence through inspectable source, documented contracts, actual error responses, and restart checks. A technical customer could review the test log, HTTP exchanges, architecture trade-offs, and additions diff.
++
++AI-assisted execution remains subject to human responsibility: the learner must understand data flow (request validation → route → SQLite transaction → response), confirm tool approval, inspect the source/dependencies, and accept the result. Passing tests support acceptance but do not authorize a merge or publication.
++
++## 10. Day 05 preparation
++
++Retrieval helps answer questions from private or changing knowledge that is not reliably available in a model's training. Parse documents into usable text, remove repeated headers/footers and noise while preserving structure, choose chunk size based on coherent content and retrieval needs, use overlap where context would otherwise be lost, and attach source/section/access metadata for filtering and citation. This is preparatory reading, not an additional application assignment.
++
++## Follow-up: requested home dashboard
++
++After the original assessment implementation, the learner ran the service and observed a 404 at `/`. The API was operating as designed; the learner then explicitly requested a home/dashboard there. This authorized a small extension to the original no-frontend scope. The dashboard displays actual task counts and saved tasks, and links to the interactive API docs for mutations. Server-rendered HTML keeps the extension small with no new dependencies; user-provided text is escaped to prevent HTML injection.
++
++The agent used the Sites skill's local-only workflow guidance while implementing the page in the existing FastAPI project; no Site was registered or deployed. After the code change, the full test suite passed **47 tests** with the existing TestClient deprecation warning. The added test verifies dashboard content, counts, links, empty state, and HTML escaping. Browser visual inspection was not performed. The original 46-test and restart results remain historical evidence, and the new test log is recorded separately. The learner should verify the dashboard visually and refresh it after task changes.
++
++## Follow-up: task management UI
++
++The learner then requested UI for the other API operations. The extension adds task list/create/detail/edit pages and a deletion confirmation dialog. Forms call the original JSON endpoints; validation and SQLite persistence remain centralized. Plain HTML/CSS and small JavaScript keep the application understandable and avoid new frontend dependencies. User data remains escaped in templates, and errors are inserted with textContent.
++
++The agent reran the full suite: **51 tests passed**, with the existing warning. Tests exercise page rendering, prefilled forms and escaping, missing-task pages, asset delivery, and corresponding API state transitions. They do not simulate browser clicks or execute JavaScript; that verification remains a manual learner step. This distinction prevents treating HTTP tests as proof of complete browser behavior. The Sites skill was used for local UI workflow guidance; the app remains local.
++
++## Follow-up: navigation correction
++
++The learner identified that Overview and Tasks looked identical. Both URLs originally shared the dashboard renderer. The agent corrected this by separating their handlers: Overview retains summary counts, while Tasks provides a dedicated list with status filters and active navigation styling. The full suite passed **52 tests**, including a regression test for distinct views and correct filtering. This was an implementation issue identified through learner feedback; earlier screenshots did not prove the navigation views were distinct.
+--- /dev/null
++++ b/requirements.txt
+@@ -0,0 +1,5 @@
++fastapi>=0.115,<1
++pydantic>=2.10,<3
++uvicorn>=0.30,<1
++httpx>=0.27,<1
++pytest>=8,<10
+--- /dev/null
++++ b/requirements-lock.txt
+@@ -0,0 +1,23 @@
++annotated-doc==0.0.5
++annotated-types==0.8.0
++anyio==4.15.1
++certifi==2026.7.22
++click==8.5.0
++colorama==0.4.6
++fastapi==0.143.0
++h11==0.16.0
++httpcore==1.0.9
++httpx==0.28.1
++idna==3.20
++iniconfig==2.3.1
++opentelemetry-api==1.45.1
++packaging==26.3
++pluggy==1.6.0
++pydantic==2.14.1
++pydantic_core==2.50.1
++Pygments==2.21.0
++pytest==9.1.1
++starlette==1.7.0
++typing-inspection==0.4.4
++typing_extensions==4.16.0
++uvicorn==0.54.0
+--- /dev/null
++++ b/app/__init__.py
+@@ -0,0 +1 @@
++"""Local task management API."""
+--- /dev/null
++++ b/app/database.py
+@@ -0,0 +1,71 @@
++"""Small SQLite repository with one connection per operation."""
++
++from contextlib import contextmanager
++from datetime import datetime, timezone
++from pathlib import Path
++import sqlite3
++
++from app.models import TaskCreate, TaskUpdate
++
++
++class TaskStore:
++    def __init__(self, path: Path):
++        self.path = path
++
++    @contextmanager
++    def connection(self):
++        connection = sqlite3.connect(str(self.path), timeout=5)
++        connection.row_factory = sqlite3.Row
++        try:
++            with connection:
++                yield connection
++        finally:
++            connection.close()
++
++    def initialize(self):
++        self.path.parent.mkdir(parents=True, exist_ok=True)
++        with self.connection() as connection:
++            connection.execute("""
++                CREATE TABLE IF NOT EXISTS tasks (
++                    id INTEGER PRIMARY KEY AUTOINCREMENT,
++                    title TEXT NOT NULL CHECK(length(trim(title)) BETWEEN 1 AND 200),
++                    description TEXT CHECK(description IS NULL OR length(description) <= 2000),
++                    status TEXT NOT NULL CHECK(status IN ('pending', 'in_progress', 'completed')),
++                    created_at TEXT NOT NULL
++                )
++            """)
++
++    def create(self, task: TaskCreate):
++        with self.connection() as connection:
++            cursor = connection.execute(
++                "INSERT INTO tasks (title, description, status, created_at) VALUES (?, ?, ?, ?)",
++                (task.title, task.description, task.status.value, datetime.now(timezone.utc).isoformat()),
++            )
++            return dict(connection.execute("SELECT * FROM tasks WHERE id = ?", (cursor.lastrowid,)).fetchone())
++
++    def list(self):
++        with self.connection() as connection:
++            return [dict(row) for row in connection.execute("SELECT * FROM tasks ORDER BY id")]
++
++    def get(self, task_id: int):
++        with self.connection() as connection:
++            row = connection.execute("SELECT * FROM tasks WHERE id = ?", (task_id,)).fetchone()
++            return dict(row) if row else None
++
++    def update(self, task_id: int, task: TaskUpdate):
++        # The only interpolated SQL identifiers come from this fixed allowlist.
++        changes = task.model_dump(exclude_unset=True, mode="json")
++        columns = [name for name in ("title", "description", "status") if name in changes]
++        assignments = ", ".join(f"{name} = ?" for name in columns)
++        with self.connection() as connection:
++            cursor = connection.execute(
++                f"UPDATE tasks SET {assignments} WHERE id = ?",
++                (*[changes[name] for name in columns], task_id),
++            )
++            if cursor.rowcount == 0:
++                return None
++            return dict(connection.execute("SELECT * FROM tasks WHERE id = ?", (task_id,)).fetchone())
++
++    def delete(self, task_id: int):
++        with self.connection() as connection:
++            return connection.execute("DELETE FROM tasks WHERE id = ?", (task_id,)).rowcount > 0
+--- /dev/null
++++ b/app/main.py
+@@ -0,0 +1,92 @@
++"""FastAPI routes and lifespan; run with python -m uvicorn app.main:app."""
++
++from contextlib import asynccontextmanager
++import os
++from pathlib import Path
++from typing import Annotated
++
++from fastapi import FastAPI, HTTPException, Path as PathParameter, Response
++from fastapi.responses import HTMLResponse
++from fastapi.staticfiles import StaticFiles
++
++from app.database import TaskStore
++from app.dashboard import render_dashboard, render_detail, render_form, render_not_found, render_task_list
++from app.models import Task, TaskCreate, TaskUpdate, TaskStatus
++
++
++TaskId = Annotated[int, PathParameter(gt=0, le=9223372036854775807)]
++DEFAULT_DATABASE = Path(__file__).resolve().parents[1] / "data" / "tasks.db"
++
++
++def create_app(database_path: str | Path | None = None) -> FastAPI:
++    path = Path(database_path if database_path is not None else os.environ.get("TASK_DB_PATH", DEFAULT_DATABASE))
++    store = TaskStore(path)
++
++    @asynccontextmanager
++    async def lifespan(application: FastAPI):
++        store.initialize()
++        yield
++
++    application = FastAPI(title="Task Management API", version="1.0.0", lifespan=lifespan)
++    application.mount("/static", StaticFiles(directory=Path(__file__).parent / "static"), name="static")
++
++    @application.get("/", response_class=HTMLResponse, include_in_schema=False)
++    def dashboard():
++        return render_dashboard(store.list())
++
++    @application.get("/ui/tasks", response_class=HTMLResponse, include_in_schema=False)
++    def task_list_page(status: TaskStatus | None = None):
++        return render_task_list(store.list(), status.value if status else None)
++
++    @application.get("/ui/tasks/new", response_class=HTMLResponse, include_in_schema=False)
++    def new_task_page():
++        return render_form()
++
++    @application.get("/ui/tasks/{task_id}", response_class=HTMLResponse, include_in_schema=False)
++    def task_page(task_id: TaskId):
++        task = store.get(task_id)
++        if task is None:
++            return HTMLResponse(render_not_found(), status_code=404)
++        return render_detail(task)
++
++    @application.get("/ui/tasks/{task_id}/edit", response_class=HTMLResponse, include_in_schema=False)
++    def edit_task_page(task_id: TaskId):
++        task = store.get(task_id)
++        if task is None:
++            return HTMLResponse(render_not_found(), status_code=404)
++        return render_form(task)
++
++    @application.post("/tasks", response_model=Task, status_code=201)
++    def create_task(task: TaskCreate, response: Response):
++        result = store.create(task)
++        response.headers["Location"] = f"/tasks/{result['id']}"
++        return result
++
++    @application.get("/tasks", response_model=list[Task])
++    def list_tasks():
++        return store.list()
++
++    @application.get("/tasks/{task_id}", response_model=Task)
++    def get_task(task_id: TaskId):
++        result = store.get(task_id)
++        if result is None:
++            raise HTTPException(status_code=404, detail="Task not found")
++        return result
++
++    @application.patch("/tasks/{task_id}", response_model=Task)
++    def update_task(task_id: TaskId, task: TaskUpdate):
++        result = store.update(task_id, task)
++        if result is None:
++            raise HTTPException(status_code=404, detail="Task not found")
++        return result
++
++    @application.delete("/tasks/{task_id}", status_code=204)
++    def delete_task(task_id: TaskId):
++        if not store.delete(task_id):
++            raise HTTPException(status_code=404, detail="Task not found")
++        return Response(status_code=204)
++
++    return application
++
++
++app = create_app()
+--- /dev/null
++++ b/app/models.py
+@@ -0,0 +1,52 @@
++"""Request and response contracts."""
++
++from datetime import datetime
++from enum import Enum
++from typing import Annotated
++
++from pydantic import BaseModel, ConfigDict, Field, StringConstraints, model_validator
++
++
++class TaskStatus(str, Enum):
++    pending = "pending"
++    in_progress = "in_progress"
++    completed = "completed"
++
++
++Title = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=200)]
++Description = Annotated[str, StringConstraints(max_length=2000)]
++
++
++class TaskCreate(BaseModel):
++    model_config = ConfigDict(extra="forbid")
++
++    title: Title
++    description: Description | None = None
++    status: TaskStatus = TaskStatus.pending
++
++
++class TaskUpdate(BaseModel):
++    """PATCH changes only provided fields; null may clear the description."""
++
++    model_config = ConfigDict(extra="forbid")
++
++    title: Title | None = None
++    description: Description | None = None
++    status: TaskStatus | None = None
++
++    @model_validator(mode="after")
++    def check_update(self):
++        if not self.model_fields_set:
++            raise ValueError("Provide at least one field to update")
++        for name in ("title", "status"):
++            if name in self.model_fields_set and getattr(self, name) is None:
++                raise ValueError(f"{name} cannot be null")
++        return self
++
++
++class Task(BaseModel):
++    id: int = Field(gt=0)
++    title: str
++    description: str | None
++    status: TaskStatus
++    created_at: datetime
+--- /dev/null
++++ b/tests/test_tasks.py
+@@ -0,0 +1,217 @@
++from datetime import datetime
++
++from fastapi.testclient import TestClient
++import pytest
++
++from app.main import create_app
++
++
++@pytest.fixture
++def client(tmp_path):
++    with TestClient(create_app(tmp_path / "tasks.db")) as test_client:
++        yield test_client
++
++
++def test_complete_task_lifecycle(client):
++    assert client.get("/tasks").json() == []
++    response = client.post("/tasks", json={"title": "  Prepare assessment  ", "description": "Day 04"})
++    assert response.status_code == 201
++    task = response.json()
++    assert task["title"] == "Prepare assessment"
++    assert task["description"] == "Day 04"
++    assert task["status"] == "pending"
++    assert task["id"] > 0
++    assert datetime.fromisoformat(task["created_at"]).utcoffset().total_seconds() == 0
++    url = f"/tasks/{task['id']}"
++    assert response.headers["location"] == url
++    assert client.get("/tasks").json() == [task]
++    assert client.get(url).json() == task
++
++    response = client.patch(url, json={"title": "Submit assessment", "status": "completed"})
++    assert response.status_code == 200
++    changed = response.json()
++    assert changed == {**task, "title": "Submit assessment", "status": "completed"}
++    assert client.get(url).json() == changed
++    assert client.patch(url, json={"description": None}).json()["description"] is None
++    response = client.delete(url)
++    assert response.status_code == 204
++    assert response.content == b""
++    assert client.get(url).status_code == 404
++    assert client.get("/tasks").json() == []
++
++
++@pytest.mark.parametrize("payload", [
++    {}, {"title": ""}, {"title": " \t\n "}, {"title": None}, {"title": 123},
++    {"title": "x" * 201}, {"title": "Valid", "description": "x" * 2001},
++    {"title": "Valid", "status": "done"}, {"title": "Valid", "status": None},
++    {"title": "Valid", "id": 99}, {"title": "Valid", "created_at": "2026-01-01"},
++])
++def test_invalid_create_does_not_write(client, payload):
++    response = client.post("/tasks", json=payload)
++    assert response.status_code == 422
++    assert response.json()["detail"]
++    assert client.get("/tasks").json() == []
++
++
++@pytest.mark.parametrize("status", ["pending", "in_progress", "completed"])
++def test_all_statuses_and_optional_description(client, status):
++    response = client.post("/tasks", json={"title": "Task", "status": status})
++    assert response.status_code == 201
++    assert response.json()["status"] == status
++    assert response.json()["description"] is None
++
++
++@pytest.mark.parametrize("payload", [
++    {}, {"title": ""}, {"title": "   "}, {"title": None}, {"status": None},
++    {"status": "done"}, {"description": "x" * 2001}, {"id": 99},
++])
++def test_invalid_update_preserves_existing_task(client, payload):
++    task = client.post("/tasks", json={"title": "Keep me"}).json()
++    url = f"/tasks/{task['id']}"
++    response = client.patch(url, json=payload)
++    assert response.status_code == 422
++    assert response.json()["detail"]
++    assert client.get(url).json() == task
++
++
++@pytest.mark.parametrize("method,payload", [("get", None), ("patch", {"status": "completed"}), ("delete", None)])
++def test_nonexistent_id(client, method, payload):
++    kwargs = {"json": payload} if payload is not None else {}
++    response = getattr(client, method)("/tasks/999", **kwargs)
++    assert response.status_code == 404
++    assert response.json() == {"detail": "Task not found"}
++
++
++@pytest.mark.parametrize("task_id", ["0", "-1", "abc", "1.5", "9223372036854775808"])
++@pytest.mark.parametrize("method,payload", [("get", None), ("patch", {"title": "Valid"}), ("delete", None)])
++def test_invalid_ids(client, task_id, method, payload):
++    kwargs = {"json": payload} if payload is not None else {}
++    response = getattr(client, method)(f"/tasks/{task_id}", **kwargs)
++    assert response.status_code == 422
++    assert response.json()["detail"]
++
++
++def test_persistence_across_fresh_applications(tmp_path):
++    database = tmp_path / "persist.db"
++    with TestClient(create_app(database)) as first:
++        task = first.post("/tasks", json={"title": "Persist me"}).json()
++    with TestClient(create_app(database)) as second:
++        assert second.get(f"/tasks/{task['id']}").json() == task
++        assert second.patch(f"/tasks/{task['id']}", json={"status": "in_progress"}).status_code == 200
++    with TestClient(create_app(database)) as third:
++        assert third.get(f"/tasks/{task['id']}").json()["status"] == "in_progress"
++        assert third.delete(f"/tasks/{task['id']}").status_code == 204
++    with TestClient(create_app(database)) as fourth:
++        assert fourth.get("/tasks").json() == []
++
++
++def test_parameterized_sql_and_unique_ids(client):
++    title = "Robert'); DROP TABLE tasks;--"
++    first = client.post("/tasks", json={"title": title}).json()
++    second = client.post("/tasks", json={"title": "Another task"}).json()
++    assert first["title"] == title
++    assert second["id"] != first["id"]
++    assert client.get("/tasks").json() == [first, second]
++    assert client.delete(f"/tasks/{first['id']}").status_code == 204
++    assert client.get(f"/tasks/{second['id']}").json() == second
++
++
++def test_missing_request_body(client):
++    assert client.post("/tasks").status_code == 422
++
++
++def test_title_and_description_boundaries(client):
++    response = client.post("/tasks", json={"title": "x" * 200, "description": "y" * 2000})
++    assert response.status_code == 201
++
++
++def test_docs_available(client):
++    assert client.get("/docs").status_code == 200
++    assert "/tasks/{task_id}" in client.get("/openapi.json").json()["paths"]
++
++
++def test_dashboard_empty_and_saved_tasks(client):
++    response = client.get("/")
++    assert response.status_code == 200
++    assert response.headers["content-type"].startswith("text/html")
++    assert "A fresh start." in response.text
++    assert 'href="/docs"' in response.text
++    task = client.post("/tasks", json={"title": "<script>alert(1)</script>", "description": "<b>unsafe</b>", "status": "completed"}).json()
++    page = client.get("/").text
++    assert "A fresh start." not in page
++    assert "&lt;script&gt;alert(1)&lt;/script&gt;" in page
++    assert "<script>alert(1)</script>" not in page
++    assert "&lt;b&gt;unsafe&lt;/b&gt;" in page
++    assert 'Completed</span><strong>1</strong>' in page
++    assert f'href="/ui/tasks/{task["id"]}"' in page
++
++
++def test_ui_create_view_edit_delete_workflow(client):
++    page = client.get("/ui/tasks/new")
++    assert page.status_code == 200
++    assert 'data-endpoint="/tasks" data-method="POST"' in page.text
++    assert 'name="title" required maxlength="200"' in page.text
++    assert 'src="/static/tasks.js"' in page.text
++    task = client.post("/tasks", json={"title": 'Review "UI" <script>', "description": "</textarea><script>alert(1)</script>"}).json()
++    task_id = task["id"]
++    listing = client.get("/ui/tasks")
++    assert listing.status_code == 200
++    assert f'href="/ui/tasks/{task_id}"' in listing.text
++    detail = client.get(f"/ui/tasks/{task_id}")
++    assert detail.status_code == 200
++    assert f'href="/ui/tasks/{task_id}/edit"' in detail.text
++    assert 'id="delete-dialog"' in detail.text
++    assert f'data-endpoint="/tasks/{task_id}"' in detail.text
++    edit = client.get(f"/ui/tasks/{task_id}/edit")
++    assert edit.status_code == 200
++    assert f'data-endpoint="/tasks/{task_id}" data-method="PATCH"' in edit.text
++    assert 'value="Review &quot;UI&quot; &lt;script&gt;"' in edit.text
++    assert "&lt;/textarea&gt;&lt;script&gt;alert(1)&lt;/script&gt;" in edit.text
++    assert "</textarea><script>alert(1)</script>" not in edit.text
++    response = client.patch(f"/tasks/{task_id}", json={"title": "Updated from form", "description": None, "status": "completed"})
++    assert response.status_code == 200
++    detail = client.get(f"/ui/tasks/{task_id}")
++    assert "Updated from form" in detail.text
++    assert "No description provided." in detail.text
++    assert client.delete(f"/tasks/{task_id}").status_code == 204
++    assert client.get(f"/ui/tasks/{task_id}").status_code == 404
++    assert "A fresh start." in client.get("/ui/tasks").text
++
++
++@pytest.mark.parametrize("suffix", ["", "/edit"])
++def test_ui_missing_task_has_friendly_page(client, suffix):
++    response = client.get(f"/ui/tasks/999{suffix}")
++    assert response.status_code == 404
++    assert response.headers["content-type"].startswith("text/html")
++    assert "Task not found" in response.text
++    assert 'href="/ui/tasks"' in response.text
++
++
++def test_ui_assets_are_served(client):
++    css = client.get("/static/styles.css")
++    script = client.get("/static/tasks.js")
++    assert css.status_code == 200
++    assert "@media" in css.text
++    assert script.status_code == 200
++    assert "fetch(endpoint, options)" in script.text
++
++
++def test_overview_and_tasks_are_distinct_with_status_filters(client):
++    for status in ("pending", "in_progress", "completed"):
++        client.post("/tasks", json={"title": f"Unique {status} task", "status": status})
++    overview = client.get("/").text
++    listing = client.get("/ui/tasks").text
++    assert "A little clarity for your day." in overview
++    assert 'href="/" aria-current="page"' in overview
++    assert "Manage your tasks." in listing
++    assert "A little clarity for your day." not in listing
++    assert 'href="/ui/tasks" aria-current="page"' in listing
++    for status in ("pending", "in_progress", "completed"):
++        page = client.get(f"/ui/tasks?status={status}")
++        assert page.status_code == 200
++        assert f"Unique {status} task" in page.text
++        for other in ("pending", "in_progress", "completed"):
++            if other != status:
++                assert f"Unique {other} task" not in page.text
++    assert client.get("/ui/tasks?status=done").status_code == 422
++    assert len(client.get("/tasks").json()) == 3
+--- /dev/null
++++ b/scripts/verify_http.py
+@@ -0,0 +1,102 @@
++"""Exercise actual HTTP and restart Uvicorn using an isolated temporary database."""
++
++import json
++import os
++from pathlib import Path
++import socket
++import subprocess
++import sys
++from tempfile import TemporaryDirectory
++import time
++
++import httpx
++
++
++ROOT = Path(__file__).resolve().parents[1]
++
++
++def main():
++    evidence = ROOT / "evidence"
++    evidence.mkdir(exist_ok=True)
++    exchanges = []
++    with TemporaryDirectory(prefix="day04-http-") as directory:
++        environment = {**os.environ, "TASK_DB_PATH": str(Path(directory) / "tasks.db")}
++        with socket.socket() as sock:
++            sock.bind(("127.0.0.1", 0))
++            port = sock.getsockname()[1]
++        base = f"http://127.0.0.1:{port}"
++        with (evidence / "server.log").open("w", encoding="utf-8") as server_log:
++            def start():
++                process = subprocess.Popen(
++                    [sys.executable, "-m", "uvicorn", "app.main:app", "--host", "127.0.0.1", "--port", str(port)],
++                    cwd=ROOT, env=environment, stdout=server_log, stderr=subprocess.STDOUT,
++                    creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
++                )
++                try:
++                    for _ in range(100):
++                        if process.poll() is not None:
++                            raise RuntimeError("Server exited; see evidence/server.log")
++                        try:
++                            if httpx.get(base + "/tasks", timeout=1).status_code == 200:
++                                return process
++                        except httpx.TransportError:
++                            pass
++                        time.sleep(0.1)
++                    raise RuntimeError("Server readiness timeout")
++                except BaseException:
++                    stop(process)
++                    raise
++
++            def stop(process):
++                process.terminate()
++                try:
++                    process.wait(timeout=10)
++                except subprocess.TimeoutExpired:
++                    process.kill()
++                    process.wait(timeout=5)
++
++            def request(method, path, expected, payload=None):
++                kwargs = {"json": payload} if payload is not None else {}
++                response = httpx.request(method, base + path, timeout=5, **kwargs)
++                body = response.json() if response.content else None
++                exchanges.append({"method": method, "path": path, "request": payload, "status": response.status_code, "response": body})
++                assert response.status_code == expected, exchanges[-1]
++                print(f"PASS {method} {path} -> {expected}")
++                return body
++
++            process = start()
++            try:
++                task = request("POST", "/tasks", 201, {"title": "Complete Day 04", "description": "Verified over real HTTP"})
++                path = f"/tasks/{task['id']}"
++                assert request("GET", "/tasks", 200) == [task]
++                assert request("GET", path, 200) == task
++                updated = request("PATCH", path, 200, {"status": "completed"})
++                assert updated["status"] == "completed"
++                request("POST", "/tasks", 422, {"title": "   "})
++                request("POST", "/tasks", 422, {"title": "Invalid status", "status": "done"})
++                request("GET", "/tasks/999", 404)
++                request("GET", "/tasks/abc", 422)
++            finally:
++                stop(process)
++            print("STOPPED first Uvicorn process; restarting against the same SQLite file")
++            process = start()
++            try:
++                assert request("GET", path, 200) == updated
++                print("PASS task ID, fields, updated status, and timestamp survived process restart")
++                request("DELETE", path, 204)
++                request("GET", path, 404)
++                assert request("GET", "/tasks", 200) == []
++            finally:
++                stop(process)
++            process = start()
++            try:
++                assert request("GET", "/tasks", 200) == []
++                print("PASS deletion survived second process restart")
++            finally:
++                stop(process)
++    (evidence / "http-exchanges.json").write_text(json.dumps(exchanges, indent=2) + "\n", encoding="utf-8")
++    print(f"PASS all {len(exchanges)} real HTTP exchanges; server processes stopped")
++
++
++if __name__ == "__main__":
++    main()
+--- /dev/null
++++ b/app/dashboard.py
+@@ -0,0 +1,99 @@
++"""Render task pages, escaping user data without a template dependency."""
++
++from datetime import datetime
++from html import escape
++from pathlib import Path
++from string import Template
++
++
++TEMPLATE = Template((Path(__file__).parent / "templates" / "dashboard.html").read_text(encoding="utf-8"))
++PAGE = Template((Path(__file__).parent / "templates" / "page.html").read_text(encoding="utf-8"))
++
++
++def render_task_content(tasks: list[dict]) -> str:
++    rows = []
++    for task in reversed(tasks):
++        status = task["status"]
++        created = datetime.fromisoformat(task["created_at"]).strftime("%d %b %Y, %H:%M UTC")
++        rows.append(
++            f'<tr><td class="task-cell"><strong>{escape(task["title"])}</strong>'
++            f'<span>{escape(task["description"] or "No description")}</span></td>'
++            f'<td><span class="badge {escape(status, quote=True)}">{escape(status.replace("_", " ").title())}</span></td>'
++            f'<td class="date">{escape(created)}</td>'
++            f'<td><a class="view-link" href="/ui/tasks/{task["id"]}">Open #{task["id"]} &rarr;</a></td></tr>'
++        )
++    content = (
++        '<div class="table-scroll"><table><thead><tr><th>Task</th><th>Status</th><th>Created</th><th>Details</th></tr></thead>'
++        '<tbody>' + "".join(rows) + '</tbody></table></div>'
++        if rows else
++        '<div class="empty"><span class="empty-icon" aria-hidden="true">&#10003;</span>'
++        '<h3>A fresh start.</h3><p>Create your first task to get started.</p>'
++        '<a class="button primary" href="/ui/tasks/new">Create your first task &rarr;</a></div>'
++    )
++    return content
++
++
++def render_dashboard(tasks: list[dict]) -> str:
++    counts = {status: sum(task["status"] == status for task in tasks) for status in ("pending", "in_progress", "completed")}
++    return TEMPLATE.substitute(total=len(tasks), **counts, task_content=render_task_content(tasks))
++
++
++def render_task_list(tasks: list[dict], status: str | None = None) -> str:
++    filters = []
++    for value, label in ((None, "All tasks"), ("pending", "Pending"), ("in_progress", "In progress"), ("completed", "Completed")):
++        href = "/ui/tasks" + (f"?status={value}" if value else "")
++        count = len(tasks) if value is None else sum(task["status"] == value for task in tasks)
++        current = ' aria-current="page"' if value == status else ""
++        filters.append(f'<a class="filter-link" href="{href}"{current}>{label} <span>{count}</span></a>')
++    selected = [task for task in tasks if status is None or task["status"] == status]
++    content = render_task_content(selected)
++    if status and not selected:
++        content = '<div class="empty"><h3>No tasks with this status.</h3><p>Choose another filter or create a new task.</p><a class="button secondary" href="/ui/tasks">Show all tasks</a></div>'
++    return render_page("Tasks", f'''
++        <section class="intro"><div><p class="eyebrow">TASK WORKSPACE</p><h1>Manage your tasks.</h1><p class="subtitle">Browse tasks by status, then open one to view or edit it.</p></div><a class="button primary" href="/ui/tasks/new">+ Create a task</a></section>
++        <nav class="filters" aria-label="Filter tasks by status">{''.join(filters)}</nav>
++        <section class="panel"><div class="panel-head"><div><h2>Task list</h2><p>{len(selected)} task{'s' if len(selected) != 1 else ''} shown &middot; Newest first</p></div></div>{content}</section>''')
++
++
++def render_page(title: str, content: str) -> str:
++    return PAGE.substitute(page_title=escape(title), page_content=content)
++
++
++def render_form(task: dict | None = None) -> str:
++    editing = task is not None
++    task = task or {"title": "", "description": None, "status": "pending"}
++    title = "Edit task" if editing else "Create a task"
++    endpoint = f'/tasks/{task["id"]}' if editing else "/tasks"
++    cancel = f'/ui/tasks/{task["id"]}' if editing else "/ui/tasks"
++    options = "".join(
++        f'<option value="{status}"{" selected" if task["status"] == status else ""}>{status.replace("_", " ").title()}</option>'
++        for status in ("pending", "in_progress", "completed")
++    )
++    return render_page(title, f'''
++        <a class="breadcrumbs" href="{cancel}">&larr; Back to tasks</a>
++        <section class="panel form-panel"><div class="panel-head"><div><h1>{title}</h1><p>A clear title makes the next step easier.</p></div></div>
++        <div class="form-body"><div id="feedback" class="feedback" role="alert" hidden></div>
++        <form id="task-form" data-endpoint="{endpoint}" data-method="{'PATCH' if editing else 'POST'}">
++          <div class="field"><label for="title">Title *</label><input id="title" name="title" required maxlength="200" value="{escape(task['title'], quote=True)}" placeholder="What needs to get done?"><small>Required. Up to 200 characters.</small></div>
++          <div class="field"><label for="description">Description</label><textarea id="description" name="description" maxlength="2000" placeholder="Add a little context…">{escape(task['description'] or '')}</textarea><small>Optional. Up to 2,000 characters.</small></div>
++          <div class="field"><label for="status">Status</label><select id="status" name="status">{options}</select></div>
++          <div class="actions"><button class="button primary" type="submit">{'Save changes' if editing else 'Create task'}</button><a class="button secondary" href="{cancel}">Cancel</a></div>
++        </form></div></section>''')
++
++
++def render_detail(task: dict) -> str:
++    task_id = task["id"]
++    return render_page(task["title"], f'''
++        <a class="breadcrumbs" href="/ui/tasks">&larr; All tasks</a>
++        <section class="panel form-panel"><div class="panel-head"><div><p>Task #{task_id}</p><h1 class="detail-title">{escape(task['title'])}</h1></div></div>
++        <div class="form-body"><div id="feedback" class="feedback" role="alert" hidden></div>
++        <div class="detail-grid"><div><div class="detail-label">Status</div><span class="badge {escape(task['status'], quote=True)}">{escape(task['status'].replace('_', ' ').title())}</span></div>
++        <div><div class="detail-label">Created (UTC)</div><div>{escape(datetime.fromisoformat(task['created_at']).strftime('%d %b %Y, %H:%M'))}</div></div>
++        <div class="wide"><div class="detail-label">Description</div><p class="description">{escape(task['description'] or 'No description provided.')}</p></div></div>
++        <div class="actions"><a class="button primary" href="/ui/tasks/{task_id}/edit">Edit task</a><button class="button danger" id="delete-open" type="button">Delete task</button><a class="button secondary" href="/tasks/{task_id}">View JSON</a></div>
++        </div></section>
++        <dialog id="delete-dialog" aria-labelledby="delete-heading"><h2 id="delete-heading">Delete this task?</h2><p>This will permanently remove the task. This action cannot be undone.</p><div class="actions"><button id="delete-confirm" class="button danger" data-endpoint="/tasks/{task_id}" type="button">Delete task</button><button id="delete-cancel" class="button secondary" type="button">Keep task</button></div></dialog>''')
++
++
++def render_not_found() -> str:
++    return render_page("Task not found", '<section class="panel empty"><h1>Task not found</h1><p>This task may have been deleted, or the link may be incorrect.</p><a class="button primary" href="/ui/tasks">Back to tasks</a></section>')
+--- /dev/null
++++ b/app/templates/dashboard.html
+@@ -0,0 +1,26 @@
++<!doctype html>
++<html lang="en">
++<head>
++  <meta charset="utf-8">
++  <meta name="viewport" content="width=device-width, initial-scale=1">
++  <title>Taskboard | Task Management</title>
++  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48'%3E%3Crect width='48' height='48' rx='12' fill='%230d9488'/%3E%3Cpath d='m12 25 8 8 16-18' fill='none' stroke='white' stroke-width='5'/%3E%3C/svg%3E">
++  <link rel="stylesheet" href="/static/styles.css">
++  <script src="/static/tasks.js" defer></script>
++</head>
++<body>
++  <header class="topbar"><nav class="nav" aria-label="Main navigation"><a class="brand" href="/"><span class="brand-icon" aria-hidden="true">&#10003;</span>Taskboard</a><div class="navlinks"><a href="/" aria-current="page">Overview</a><a href="/ui/tasks">Tasks</a><a href="/docs">API docs &nearr;</a></div></nav></header>
++  <main>
++    <section class="intro"><div><p class="eyebrow">YOUR WORK, AT A GLANCE</p><h1>A little clarity for your day.</h1><p class="subtitle">See what's waiting, what's moving, and what's done.</p></div><a class="button primary" href="/ui/tasks/new">+ Create a task</a></section>
++    <section class="stats" aria-label="Task summary">
++      <div class="stat"><span class="stat-label"><span class="dot"></span>Total tasks</span><strong>$total</strong><small>Everything in your workspace</small></div>
++      <div class="stat"><span class="stat-label"><span class="dot pending-dot"></span>Pending</span><strong>$pending</strong><small>Ready when you are</small></div>
++      <div class="stat"><span class="stat-label"><span class="dot progress-dot"></span>In progress</span><strong>$in_progress</strong><small>Moving things forward</small></div>
++      <div class="stat"><span class="stat-label"><span class="dot done-dot"></span>Completed</span><strong>$completed</strong><small>One less thing to do</small></div>
++    </section>
++    <section class="panel" aria-labelledby="tasks-heading"><div class="panel-head"><div><h2 id="tasks-heading">Your tasks</h2><p>Saved tasks, newest first.</p></div><a class="button secondary" href="/">&#8635; Refresh</a></div>$task_content</section>
++    <aside class="note"><span aria-hidden="true">&#9432;</span><p>Create a task or open a saved task to edit its details, change its status, or delete it.</p></aside>
++    <footer><span>Taskboard &middot; Day 04 training project</span><a href="/tasks">View tasks as JSON &rarr;</a></footer>
++  </main>
++</body>
++</html>
+--- /dev/null
++++ b/app/templates/page.html
+@@ -0,0 +1,15 @@
++<!doctype html>
++<html lang="en">
++<head>
++  <meta charset="utf-8">
++  <meta name="viewport" content="width=device-width, initial-scale=1">
++  <title>$page_title | Taskboard</title>
++  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48'%3E%3Crect width='48' height='48' rx='12' fill='%230d9488'/%3E%3Cpath d='m12 25 8 8 16-18' fill='none' stroke='white' stroke-width='5'/%3E%3C/svg%3E">
++  <link rel="stylesheet" href="/static/styles.css">
++  <script src="/static/tasks.js" defer></script>
++</head>
++<body>
++  <header class="topbar"><nav class="nav" aria-label="Main navigation"><a class="brand" href="/"><span class="brand-icon" aria-hidden="true">&#10003;</span>Taskboard</a><div class="navlinks"><a href="/">Overview</a><a href="/ui/tasks" aria-current="page">Tasks</a><a href="/docs">API docs &nearr;</a></div></nav></header>
++  <main>$page_content</main>
++</body>
++</html>
+--- /dev/null
++++ b/app/static/styles.css
+@@ -0,0 +1,14 @@
++    :root{font-family:Segoe UI,Arial,sans-serif;color:#172b3a;background:#f5f7fa;font-synthesis:none}
++    *{box-sizing:border-box}body{margin:0}a{color:inherit;text-decoration:none}a:focus-visible{outline:3px solid #0d9488;outline-offset:4px}
++    .topbar{background:#132c3d;color:white}.nav{max-width:1180px;margin:auto;display:flex;align-items:center;justify-content:space-between;padding:22px 30px;gap:20px}
++    .brand{display:flex;align-items:center;gap:11px;font-size:21px;font-weight:700;letter-spacing:-.6px}.brand-icon{background:#14b8a6;border-radius:9px;padding:5px 10px}.navlinks{display:flex;gap:24px;font-size:14px;color:#d6e4ec}.navlinks a:hover{color:white}
++    main{max-width:1180px;margin:auto;padding:48px 30px}.intro{display:flex;justify-content:space-between;align-items:center;gap:24px;margin-bottom:32px}.eyebrow{font-size:12px;letter-spacing:2px;font-weight:700;color:#0b8177;margin:0 0 12px}h1{font-size:38px;letter-spacing:-1.3px;margin:0 0 10px}p{line-height:1.6}.subtitle{color:#617481;margin:0}
++    .button{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:12px 18px;border-radius:9px;font-size:14px;font-weight:600;white-space:nowrap}.primary{background:#0d887e;color:white}.primary:hover{background:#086b63}.secondary{border:1px solid #dae3e9;background:white;color:#344e5f}.secondary:hover{background:#edf5f5}
++    .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:30px}.stat{background:white;border:1px solid #e1e8ed;border-radius:13px;padding:22px}.stat-label{display:flex;align-items:center;gap:8px;color:#617481;font-size:13px;font-weight:600}.dot{width:8px;height:8px;background:#526c80;border-radius:50%}.pending-dot{background:#d69c22}.progress-dot{background:#4382ce}.done-dot{background:#0d9488}.stat strong{display:block;font-size:34px;letter-spacing:-1px;margin:12px 0 3px}.stat small{color:#7b8b95;font-size:12px}
++    .panel{border:1px solid #e1e8ed;background:white;border-radius:14px;overflow:hidden}.panel-head{display:flex;align-items:center;justify-content:space-between;padding:22px 24px;gap:15px;border-bottom:1px solid #edf0f3}h2{font-size:19px;letter-spacing:-.4px;margin:0 0 5px}.panel-head p{font-size:13px;color:#748491;margin:0}.table-scroll{overflow-x:auto}table{border-collapse:collapse;width:100%;text-align:left}th{background:#fafbfd;color:#738390;font-size:11px;text-transform:uppercase;letter-spacing:1px;padding:16px 24px}td{padding:20px 24px;border-top:1px solid #edf0f3;font-size:14px}.task-cell{min-width:220px;max-width:420px;overflow-wrap:anywhere}.task-cell strong{display:block;font-weight:600}.task-cell span{display:block;font-size:12px;color:#7a8995;margin-top:6px}.badge{display:inline-block;padding:6px 10px;border-radius:20px;font-size:11px;font-weight:700;white-space:nowrap}.pending{background:#fff4d7;color:#956b0e}.in_progress{background:#eaf2ff;color:#3667a2}.completed{background:#e5f6ef;color:#16815b}.date{color:#738390;font-size:12px;white-space:nowrap}.view-link{color:#0b8177;font-size:12px;font-weight:600;white-space:nowrap}.empty{text-align:center;padding:54px 20px 60px}.empty-icon{display:inline-block;background:#e5f6f2;border-radius:18px;color:#0d9488;font-size:28px;padding:12px 20px}.empty h3{font-size:22px;letter-spacing:-.5px;margin:18px 0 8px}.empty p{color:#748491;font-size:14px;margin:0 0 22px}
++    .note{display:flex;align-items:flex-start;gap:12px;background:#eaf2f7;border-radius:10px;padding:17px 20px;margin-top:22px;color:#537082;font-size:13px}.note p{margin:0}.note a{color:#0b8177;text-decoration:underline}footer{display:flex;justify-content:space-between;gap:16px;margin-top:32px;color:#82929e;font-size:12px}
++    @media(max-width:760px){.nav{padding:20px}.navlinks{gap:14px}main{padding:30px 20px}.intro{align-items:flex-start;flex-direction:column}h1{font-size:32px}.stats{grid-template-columns:repeat(2,1fr)}.stat{padding:18px}.panel-head{padding:18px}th,td{padding:15px 18px}footer{flex-direction:column}}
++
++button,input,textarea,select{font:inherit}button{cursor:pointer}button:disabled{opacity:.6;cursor:wait}.actions{display:flex;gap:12px;flex-wrap:wrap}.danger{background:#fff1f0;border:1px solid #f2c9c5;color:#a3372c}.danger:hover{background:#ffe2df}.form-panel{max-width:760px;margin:auto}.form-body{padding:26px}.field{margin-bottom:22px}.field label{display:block;font-size:14px;font-weight:600;margin-bottom:8px}.field input,.field textarea,.field select{display:block;width:100%;padding:12px 14px;border:1px solid #cbd8df;border-radius:8px;color:#172b3a;background:white}.field textarea{resize:vertical;min-height:130px}.field small{display:block;color:#748491;margin-top:7px}.field :focus{outline:2px solid #0d9488;outline-offset:2px}.feedback{padding:14px 18px;border-radius:9px;margin-bottom:20px;background:#fff1f0;color:#a3372c;overflow-wrap:anywhere}.feedback[hidden]{display:none}.breadcrumbs{display:block;color:#0b8177;font-size:14px;margin-bottom:22px}.detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:24px}.detail-label{color:#738390;font-size:12px;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px}.description{white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.7}.detail-title{overflow-wrap:anywhere}.wide{grid-column:1 / -1}.muted{color:#738390}dialog{max-width:460px;width:calc(100% - 40px);border:none;border-radius:14px;padding:28px;color:#172b3a;box-shadow:0 20px 60px #132c3d40}dialog::backdrop{background:#132c3d99}dialog h2{margin-bottom:12px}dialog p{color:#617481}.button{font-family:inherit}.primary{border:1px solid transparent}@media(max-width:600px){.detail-grid{grid-template-columns:1fr}.form-body{padding:20px}.actions .button{flex:1}}
++
++.navlinks a[aria-current="page"]{color:white;border-bottom:2px solid #2dd4bf;padding-bottom:7px}.filters{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:22px}.filter-link{display:inline-flex;align-items:center;gap:9px;border:1px solid #d8e2e8;background:white;padding:11px 16px;border-radius:9px;font-size:13px;color:#617481}.filter-link span{font-size:11px;background:#edf2f5;padding:3px 7px;border-radius:10px}.filter-link[aria-current="page"]{color:#08776f;border-color:#0d9488;background:#eaf8f4;font-weight:600}.filter-link:hover{border-color:#0d9488}
+--- /dev/null
++++ b/app/static/tasks.js
+@@ -0,0 +1,82 @@
++"use strict";
++
++const feedback = document.getElementById("feedback");
++
++function showError(error) {
++  if (!feedback) return;
++  feedback.textContent = error.message || "Something went wrong. Please try again.";
++  feedback.hidden = false;
++  feedback.scrollIntoView({ block: "nearest" });
++}
++
++async function apiRequest(endpoint, method, payload) {
++  const options = { method, headers: { Accept: "application/json" } };
++  if (payload !== undefined) {
++    options.headers["Content-Type"] = "application/json";
++    options.body = JSON.stringify(payload);
++  }
++  const response = await fetch(endpoint, options);
++  if (response.status === 204) return null;
++  const body = await response.json();
++  if (!response.ok) {
++    const detail = body.detail;
++    const message = Array.isArray(detail)
++      ? detail.map(item => `${item.loc.filter(part => part !== "body").join(".") || "Request"}: ${item.msg}`).join("; ")
++      : detail || "The request could not be completed.";
++    throw new Error(message);
++  }
++  return body;
++}
++
++const taskForm = document.getElementById("task-form");
++if (taskForm) {
++  taskForm.addEventListener("submit", async event => {
++    event.preventDefault();
++    const title = taskForm.elements.title.value.trim();
++    if (!title) {
++      showError(new Error("Enter a title containing at least one non-space character."));
++      taskForm.elements.title.focus();
++      return;
++    }
++    const submit = taskForm.querySelector('button[type="submit"]');
++    const originalText = submit.textContent;
++    submit.disabled = true;
++    submit.textContent = "Saving…";
++    feedback.hidden = true;
++    try {
++      const task = await apiRequest(taskForm.dataset.endpoint, taskForm.dataset.method, {
++        title,
++        description: taskForm.elements.description.value || null,
++        status: taskForm.elements.status.value
++      });
++      window.location.assign(`/ui/tasks/${task.id}`);
++    } catch (error) {
++      showError(error);
++    } finally {
++      submit.disabled = false;
++      submit.textContent = originalText;
++    }
++  });
++}
++
++const deleteDialog = document.getElementById("delete-dialog");
++if (deleteDialog) {
++  document.getElementById("delete-open").addEventListener("click", () => deleteDialog.showModal());
++  document.getElementById("delete-cancel").addEventListener("click", () => deleteDialog.close());
++  const confirm = document.getElementById("delete-confirm");
++  confirm.addEventListener("click", async () => {
++    confirm.disabled = true;
++    confirm.textContent = "Deleting…";
++    feedback.hidden = true;
++    try {
++      await apiRequest(confirm.dataset.endpoint, "DELETE");
++      window.location.assign("/ui/tasks");
++    } catch (error) {
++      deleteDialog.close();
++      showError(error);
++    } finally {
++      confirm.disabled = false;
++      confirm.textContent = "Delete task";
++    }
++  });
++}

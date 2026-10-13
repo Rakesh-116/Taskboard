@@ -1,0 +1,22 @@
+{
+  ".gitignore": "d019bc235134f676cbef55528d1c0a2e98742d84a179cc4083977d698b589db1",
+  "AGENTS.md": "3508c7f514fc0879dec9670d2a6927bf2a2bf0d9a59156f2a941eea640cb9a23",
+  "PLAN.md": "2045a426107e10f76891daabe958af83fef8f959700156035f352d0f6bb993e8",
+  "README.md": "c42891d04d8a51722d645e90227a1204b956c3a30e13b0f93113abc2decf35b7",
+  "VERIFICATION.md": "bb0abed46582242002c0efdfe94b90e3fc0eec1a7bc65b9cfe4f759d8e375761",
+  "ENGINEERING_REFLECTION.md": "452a81044775141d6fb2f8f1bdc6e832530bad88e9768a8897990427cbbeea96",
+  "requirements.txt": "e19120acdaeb5b7a73a2ef0ce3b9e732e0234fc521e191bfd52aa0c3d9a895f3",
+  "requirements-lock.txt": "a0c3d98abc00f7665ee80ca81b619de87c15733e4a0c66ee0af669b57f445339",
+  "app/__init__.py": "3a9ff4eb5698c306c869cf1a10fa46a8ae20ec2e1cba71d2af73a887c7ce7cab",
+  "app/database.py": "1b4290d820ecbf981e50997a25ab2901b5658292c26e9ed3e6f0ea59d35e8dfe",
+  "app/main.py": "6d8fb19bea5bcc0d106e4573fbb826ab90090fd6f749ffdf0c8b41210560ce22",
+  "app/models.py": "2a8aa5312d206d3681bb4f1cfbee421b9db572ddfb0cff2a55f04edb688d4d97",
+  "tests/test_tasks.py": "20a90b3c5c26c6670e556171eba18206eab4622aa571a222119e43bd6eb2c64b",
+  "scripts/verify_http.py": "83c0f8b37c69824c6c52c864cf3cadc9e1fc0e9a94bd029e28069b431638f99b",
+  "Day04_Engineering_Reflection_Completed.docx": "1bfdd3239bc94ab13f60355b9cb779ee4341d35247115ac1780ca410afd108e0",
+  "app/dashboard.py": "7edd2f4156cd2dd3f69d66f86cc416bb2ecf1162fc28c1a15676db59415605c2",
+  "app/templates/dashboard.html": "2be039b5c7b59aeb0c6bcd82e436ac315d2993b722f4e444e594db9a120d5d22",
+  "app/templates/page.html": "d067e268fb5d74c2f9938c9b66af682089570cf872c58d9e39fcfe146c2a4f6d",
+  "app/static/styles.css": "b5fe07ec0a198c5241daeecda1cebf9cd508eda9db7542fc8644a3f8a0ac56c4",
+  "app/static/tasks.js": "16aa1428d2841ef3fe33835fda8393fe64e0004ffc779340e86d6aeb9733bcdb"
+}

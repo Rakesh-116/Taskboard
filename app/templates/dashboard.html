@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Taskboard | Task Management</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48'%3E%3Crect width='48' height='48' rx='12' fill='%230d9488'/%3E%3Cpath d='m12 25 8 8 16-18' fill='none' stroke='white' stroke-width='5'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="/static/styles.css">
+  <script src="/static/tasks.js" defer></script>
+</head>
+<body>
+  <header class="topbar"><nav class="nav" aria-label="Main navigation"><a class="brand" href="/"><span class="brand-icon" aria-hidden="true">&#10003;</span>Taskboard</a><div class="navlinks"><a href="/" aria-current="page">Overview</a><a href="/ui/tasks">Tasks</a><a href="/docs">API docs &nearr;</a></div></nav></header>
+  <main>
+    <section class="intro"><div><p class="eyebrow">YOUR WORK, AT A GLANCE</p><h1>A little clarity for your day.</h1><p class="subtitle">See what's waiting, what's moving, and what's done.</p></div><a class="button primary" href="/ui/tasks/new">+ Create a task</a></section>
+    <section class="stats" aria-label="Task summary">
+      <div class="stat"><span class="stat-label"><span class="dot"></span>Total tasks</span><strong>$total</strong><small>Everything in your workspace</small></div>
+      <div class="stat"><span class="stat-label"><span class="dot pending-dot"></span>Pending</span><strong>$pending</strong><small>Ready when you are</small></div>
+      <div class="stat"><span class="stat-label"><span class="dot progress-dot"></span>In progress</span><strong>$in_progress</strong><small>Moving things forward</small></div>
+      <div class="stat"><span class="stat-label"><span class="dot done-dot"></span>Completed</span><strong>$completed</strong><small>One less thing to do</small></div>
+    </section>
+    <section class="panel" aria-labelledby="tasks-heading"><div class="panel-head"><div><h2 id="tasks-heading">Your tasks</h2><p>Saved tasks, newest first.</p></div><a class="button secondary" href="/">&#8635; Refresh</a></div>$task_content</section>
+    <aside class="note"><span aria-hidden="true">&#9432;</span><p>Create a task or open a saved task to edit its details, change its status, or delete it.</p></aside>
+    <footer><span>Taskboard &middot; Day 04 training project</span><a href="/tasks">View tasks as JSON &rarr;</a></footer>
+  </main>
+</body>
+</html>

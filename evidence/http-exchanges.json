@@ -1,0 +1,181 @@
+[
+  {
+    "method": "POST",
+    "path": "/tasks",
+    "request": {
+      "title": "Complete Day 04",
+      "description": "Verified over real HTTP"
+    },
+    "status": 201,
+    "response": {
+      "id": 1,
+      "title": "Complete Day 04",
+      "description": "Verified over real HTTP",
+      "status": "pending",
+      "created_at": "2026-10-12T18:30:51.087123Z"
+    }
+  },
+  {
+    "method": "GET",
+    "path": "/tasks",
+    "request": null,
+    "status": 200,
+    "response": [
+      {
+        "id": 1,
+        "title": "Complete Day 04",
+        "description": "Verified over real HTTP",
+        "status": "pending",
+        "created_at": "2026-10-12T18:30:51.087123Z"
+      }
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/tasks/1",
+    "request": null,
+    "status": 200,
+    "response": {
+      "id": 1,
+      "title": "Complete Day 04",
+      "description": "Verified over real HTTP",
+      "status": "pending",
+      "created_at": "2026-10-12T18:30:51.087123Z"
+    }
+  },
+  {
+    "method": "PATCH",
+    "path": "/tasks/1",
+    "request": {
+      "status": "completed"
+    },
+    "status": 200,
+    "response": {
+      "id": 1,
+      "title": "Complete Day 04",
+      "description": "Verified over real HTTP",
+      "status": "completed",
+      "created_at": "2026-10-12T18:30:51.087123Z"
+    }
+  },
+  {
+    "method": "POST",
+    "path": "/tasks",
+    "request": {
+      "title": "   "
+    },
+    "status": 422,
+    "response": {
+      "detail": [
+        {
+          "type": "string_too_short",
+          "loc": [
+            "body",
+            "title"
+          ],
+          "msg": "String should have at least 1 character",
+          "input": "   ",
+          "ctx": {
+            "min_length": 1
+          }
+        }
+      ]
+    }
+  },
+  {
+    "method": "POST",
+    "path": "/tasks",
+    "request": {
+      "title": "Invalid status",
+      "status": "done"
+    },
+    "status": 422,
+    "response": {
+      "detail": [
+        {
+          "type": "enum",
+          "loc": [
+            "body",
+            "status"
+          ],
+          "msg": "Input should be 'pending', 'in_progress' or 'completed'",
+          "input": "done",
+          "ctx": {
+            "expected": "'pending', 'in_progress' or 'completed'"
+          }
+        }
+      ]
+    }
+  },
+  {
+    "method": "GET",
+    "path": "/tasks/999",
+    "request": null,
+    "status": 404,
+    "response": {
+      "detail": "Task not found"
+    }
+  },
+  {
+    "method": "GET",
+    "path": "/tasks/abc",
+    "request": null,
+    "status": 422,
+    "response": {
+      "detail": [
+        {
+          "type": "int_parsing",
+          "loc": [
+            "path",
+            "task_id"
+          ],
+          "msg": "Input should be a valid integer, unable to parse string as an integer",
+          "input": "abc"
+        }
+      ]
+    }
+  },
+  {
+    "method": "GET",
+    "path": "/tasks/1",
+    "request": null,
+    "status": 200,
+    "response": {
+      "id": 1,
+      "title": "Complete Day 04",
+      "description": "Verified over real HTTP",
+      "status": "completed",
+      "created_at": "2026-10-12T18:30:51.087123Z"
+    }
+  },
+  {
+    "method": "DELETE",
+    "path": "/tasks/1",
+    "request": null,
+    "status": 204,
+    "response": null
+  },
+  {
+    "method": "GET",
+    "path": "/tasks/1",
+    "request": null,
+    "status": 404,
+    "response": {
+      "detail": "Task not found"
+    }
+  },
+  {
+    "method": "GET",
+    "path": "/tasks",
+    "request": null,
+    "status": 200,
+    "response": []
+  },
+  {
+    "method": "GET",
+    "path": "/tasks",
+    "request": null,
+    "status": 200,
+    "response": []
+  }
+]
